@@ -21,12 +21,15 @@ import com.github.libretube.ui.viewholders.PlaylistBookmarkViewHolder
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class PlaylistBookmarkAdapter: ListAdapter<PlaylistBookmark, PlaylistBookmarkViewHolder>(
     DiffUtilItemCallback(
         areItemsTheSame = { oldItem, newItem -> oldItem.playlistId == newItem.playlistId }
     )
 ) {
+    var onBookmarkRemoved: ((PlaylistBookmark) -> Unit)? = null
+
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): PlaylistBookmarkViewHolder {
         val layoutInflater = LayoutInflater.from(parent.context)
         return PlaylistBookmarkViewHolder(
@@ -67,6 +70,9 @@ class PlaylistBookmarkAdapter: ListAdapter<PlaylistBookmark, PlaylistBookmarkVie
                     if (!isBookmarked) {
                         UserDataRepositoryHelper.userDataRepository
                             .deletePlaylistBookmark(bookmark.playlistId)
+                        withContext(Dispatchers.Main) {
+                            onBookmarkRemoved?.invoke(bookmark)
+                        }
                     } else {
                         UserDataRepositoryHelper.userDataRepository
                             .createPlaylistBookmark(bookmark)

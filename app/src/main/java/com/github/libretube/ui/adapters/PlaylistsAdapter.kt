@@ -22,6 +22,7 @@ class PlaylistsAdapter(
 ) : ListAdapter<Playlists, PlaylistsViewHolder>(
     DiffUtilItemCallback(areItemsTheSame = { oldItem, newItem -> oldItem.id == newItem.id })
 ) {
+    var onListChanged: ((List<Playlists>) -> Unit)? = null
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): PlaylistsViewHolder {
         val layoutInflater = LayoutInflater.from(parent.context)
@@ -99,5 +100,6 @@ class PlaylistsAdapter(
             it.removeAt(position)
         }
         submitList(newList)
+        onListChanged?.invoke(newList)
     }
 }
