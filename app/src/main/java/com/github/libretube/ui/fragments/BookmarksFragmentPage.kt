@@ -79,6 +79,7 @@ class BookmarksFragmentPage :
         val binding = _binding ?: return
 
         binding.bookmarksRefresh.isRefreshing = false
+        binding.bookmarksCount.text = bookmarks.size.toString()
         binding.nothingHere.isVisible = bookmarks.isEmpty()
         bookmarkAdapter.submitList(bookmarks)
     }

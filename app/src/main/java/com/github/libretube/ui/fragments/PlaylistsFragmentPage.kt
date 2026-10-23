@@ -255,6 +255,7 @@ class PlaylistsFragmentPage :
         val binding = _binding ?: return
 
         binding.playlistRefresh.isRefreshing = false
+        binding.playlistCount.text = playlists.size.toString()
         binding.nothingHere.isVisible = playlists.isEmpty()
         binding.sortTV.isVisible = playlists.isNotEmpty()
         playlistsAdapter.submitList(playlists)
