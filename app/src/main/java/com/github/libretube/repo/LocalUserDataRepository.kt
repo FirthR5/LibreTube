@@ -20,8 +20,8 @@ class LocalUserDataRepository : UserDataRepository {
     private val WATCH_HISTORY_PAGE_SIZE = 30
 
     override suspend fun getPlaylist(playlistId: String): Playlist {
-        val relation = Database.localPlaylistsDao().getAll()
-            .first { it.playlist.id.toString() == playlistId }
+        val relation = Database.localPlaylistsDao().getByIdWithVideos(playlistId.toInt())
+            ?: throw NoSuchElementException("Playlist $playlistId not found")
 
         return Playlist(
             name = relation.playlist.name,
@@ -33,21 +33,21 @@ class LocalUserDataRepository : UserDataRepository {
     }
 
     override suspend fun getPlaylists(): List<Playlists> {
-        return Database.localPlaylistsDao().getAll()
+        return Database.localPlaylistsDao().getAllWithVideoCounts()
             .map {
                 Playlists(
                     id = it.playlist.id.toString(),
                     name = it.playlist.name,
                     shortDescription = it.playlist.description,
                     thumbnail = it.playlist.thumbnailUrl,
-                    videos = it.videos.size.toLong()
+                    videos = it.videoCount.toLong()
                 )
             }
     }
 
     override suspend fun addToPlaylist(playlistId: String, vararg videos: StreamItem): Boolean {
-        val localPlaylist = Database.localPlaylistsDao().getAll()
-            .first { it.playlist.id.toString() == playlistId }
+        val localPlaylist = Database.localPlaylistsDao().getById(playlistId.toInt())
+            ?: return false
 
         for (video in videos) {
             val localPlaylistItem = video.toLocalPlaylistItem(playlistId)
@@ -64,7 +64,7 @@ class LocalUserDataRepository : UserDataRepository {
             // add the new video to the database
             Database.localPlaylistsDao().addPlaylistVideo(localPlaylistItem)
 
-            val playlist = localPlaylist.playlist
+            val playlist = localPlaylist
             if (playlist.thumbnailUrl.isEmpty()) {
                 // set the new playlist thumbnail URL
                 localPlaylistItem.thumbnailUrl?.let {
@@ -78,8 +78,8 @@ class LocalUserDataRepository : UserDataRepository {
     }
 
     override suspend fun renamePlaylist(playlistId: String, newName: String): Boolean {
-        val playlist = Database.localPlaylistsDao().getAll()
-            .first { it.playlist.id.toString() == playlistId }.playlist
+        val playlist = Database.localPlaylistsDao().getById(playlistId.toInt())
+            ?: return false
         playlist.name = newName
         Database.localPlaylistsDao().updatePlaylist(playlist)
 
@@ -87,8 +87,8 @@ class LocalUserDataRepository : UserDataRepository {
     }
 
     override suspend fun changePlaylistDescription(playlistId: String, newDescription: String): Boolean {
-        val playlist = Database.localPlaylistsDao().getAll()
-            .first { it.playlist.id.toString() == playlistId }.playlist
+        val playlist = Database.localPlaylistsDao().getById(playlistId.toInt())
+            ?: return false
         playlist.description = newDescription
         Database.localPlaylistsDao().updatePlaylist(playlist)
 
@@ -96,8 +96,8 @@ class LocalUserDataRepository : UserDataRepository {
     }
 
     override suspend fun removeFromPlaylist(playlistId: String, videoId: String, index: Int): Boolean {
-        val transaction = Database.localPlaylistsDao().getAll()
-            .first { it.playlist.id.toString() == playlistId }
+        val transaction = Database.localPlaylistsDao().getByIdWithVideos(playlistId.toInt())
+            ?: return false
         Database.localPlaylistsDao().removePlaylistVideo(
             transaction.videos[index]
         )
