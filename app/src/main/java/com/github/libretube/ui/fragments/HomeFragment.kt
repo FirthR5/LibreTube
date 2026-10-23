@@ -3,6 +3,7 @@ package com.github.libretube.ui.fragments
 import android.content.Intent
 import android.os.Bundle
 import android.view.View
+import androidx.core.os.bundleOf
 import androidx.core.view.isGone
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
@@ -14,10 +15,12 @@ import com.github.libretube.api.MediaServiceRepository
 import com.github.libretube.api.TrendingCategory
 import com.github.libretube.api.obj.Playlists
 import com.github.libretube.api.obj.StreamItem
+import com.github.libretube.constants.IntentData
 import com.github.libretube.constants.PreferenceKeys
 import com.github.libretube.constants.PreferenceKeys.HOME_TAB_CONTENT
 import com.github.libretube.databinding.FragmentHomeBinding
 import com.github.libretube.db.obj.PlaylistBookmark
+import com.github.libretube.enums.LibraryTab
 import com.github.libretube.enums.PlaylistType
 import com.github.libretube.helpers.PreferenceHelper
 import com.github.libretube.ui.activities.SettingsActivity
@@ -99,11 +102,17 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         }
 
         binding.playlistsTV.setOnClickListener {
-            findNavController().navigate(R.id.action_homeFragment_to_libraryFragment)
+            findNavController().navigate(
+                R.id.action_homeFragment_to_libraryFragment,
+                bundleOf(IntentData.libraryTab to LibraryTab.PLAYLISTS)
+            )
         }
 
         binding.bookmarksTV.setOnClickListener {
-            findNavController().navigate(R.id.action_homeFragment_to_libraryFragment)
+            findNavController().navigate(
+                R.id.action_homeFragment_to_libraryFragment,
+                bundleOf(IntentData.libraryTab to LibraryTab.BOOKMARKS)
+            )
         }
 
         binding.refresh.setOnRefreshListener {
