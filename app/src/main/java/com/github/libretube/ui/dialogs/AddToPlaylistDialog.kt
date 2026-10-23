@@ -14,6 +14,7 @@ import com.github.libretube.constants.IntentData
 import com.github.libretube.databinding.DialogAddToPlaylistBinding
 import com.github.libretube.extensions.parcelable
 import com.github.libretube.ui.models.AddToPlaylistViewModel
+import com.github.libretube.ui.models.LibraryViewModel
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 
 /**
@@ -24,6 +25,8 @@ class AddToPlaylistDialog : DialogFragment() {
 
     private var videoInfo: StreamItem? = null
     private val viewModel: AddToPlaylistViewModel by activityViewModels { AddToPlaylistViewModel.Factory }
+    // keep the library's cached playlist counters in sync after adding videos
+    private val libraryViewModel: LibraryViewModel by activityViewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -44,6 +47,7 @@ class AddToPlaylistDialog : DialogFragment() {
                 viewModel.setLastSelectedPlaylistId(playlistId)
 
                 viewModel.fetchPlaylists()
+                libraryViewModel.refreshPlaylists()
             }
         }
 
@@ -86,6 +90,7 @@ class AddToPlaylistDialog : DialogFragment() {
             }
 
             saved?.let {
+                libraryViewModel.refreshPlaylists()
                 dismiss()
                 viewModel.onDismissed()
             }

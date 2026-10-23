@@ -3,6 +3,7 @@ package com.github.libretube.ui.sheets
 import android.os.Bundle
 import androidx.annotation.StringRes
 import androidx.core.os.bundleOf
+import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.lifecycleScope
 import com.github.libretube.R
 import com.github.libretube.api.MediaServiceRepository
@@ -27,6 +28,7 @@ import com.github.libretube.ui.dialogs.DeletePlaylistDialog
 import com.github.libretube.ui.dialogs.PlaylistDescriptionDialog
 import com.github.libretube.ui.dialogs.RenamePlaylistDialog
 import com.github.libretube.ui.dialogs.ShareDialog
+import com.github.libretube.ui.models.LibraryViewModel
 import com.github.libretube.ui.preferences.BackupRestoreSettings
 import com.github.libretube.util.PlayingQueue
 import kotlinx.coroutines.Dispatchers
@@ -38,6 +40,8 @@ class PlaylistOptionsBottomSheet : BaseBottomSheet() {
     private lateinit var playlistId: String
     private lateinit var playlistType: PlaylistType
     private var playlistThumbnail: String? = null
+
+    private val libraryViewModel: LibraryViewModel by activityViewModels()
 
     private var exportFormat: ImportFormat = ImportFormat.NEWPIPE
 
@@ -186,6 +190,7 @@ class PlaylistOptionsBottomSheet : BaseBottomSheet() {
                         UserDataRepositoryHelper.userDataRepository.createPlaylistBookmark(bookmark)
                     }
                 }
+                libraryViewModel.loadBookmarks(force = true)
             }
         }
     }

@@ -47,6 +47,7 @@ import com.github.libretube.ui.base.BaseActivity
 import com.github.libretube.ui.base.DynamicLayoutManagerFragment
 import com.github.libretube.ui.extensions.addOnBottomReachedListener
 import com.github.libretube.ui.models.CommonPlayerViewModel
+import com.github.libretube.ui.models.LibraryViewModel
 import com.github.libretube.ui.models.PlaylistViewModel
 import com.github.libretube.ui.sheets.BaseBottomSheet
 import com.github.libretube.ui.sheets.PlaylistOptionsBottomSheet
@@ -78,6 +79,7 @@ class PlaylistFragment : DynamicLayoutManagerFragment(R.layout.fragment_playlist
     // view models
     private val commonPlayerViewModel: CommonPlayerViewModel by activityViewModels()
     private val playlistViewModel: PlaylistViewModel by activityViewModels()
+    private val libraryViewModel: LibraryViewModel by activityViewModels()
     private var selectedSortOrder = PreferenceHelper.getInt(PreferenceKeys.PLAYLIST_SORT_ORDER, 0)
         set(value) {
             PreferenceHelper.putInt(PreferenceKeys.PLAYLIST_SORT_ORDER, value)
@@ -243,9 +245,11 @@ class PlaylistFragment : DynamicLayoutManagerFragment(R.layout.fragment_playlist
                     newPlaylistName?.let {
                         binding.playlistName.text = it
                         playlistName = it
+                        libraryViewModel.refreshPlaylists()
                     }
 
                     if (isPlaylistToBeDeleted) {
+                        libraryViewModel.removePlaylist(playlistId)
                         findNavController().popBackStack()
                         return@setFragmentResultListener
                     }
@@ -276,6 +280,7 @@ class PlaylistFragment : DynamicLayoutManagerFragment(R.layout.fragment_playlist
                             UserDataRepositoryHelper.userDataRepository
                                 .createPlaylistBookmark(bookmark)
                         }
+                        libraryViewModel.loadBookmarks(force = true)
                     }
                 }
             } else {
@@ -352,6 +357,8 @@ class PlaylistFragment : DynamicLayoutManagerFragment(R.layout.fragment_playlist
             ) {
                 val bookmark = playlist.toPlaylistBookmark(playlistBookmark.playlistId)
                 UserDataRepositoryHelper.userDataRepository.createPlaylistBookmark(bookmark)
+                // keep the cached bookmarks of the library in sync
+                libraryViewModel.loadBookmarks(force = true)
             }
         }
     }
@@ -440,6 +447,7 @@ class PlaylistFragment : DynamicLayoutManagerFragment(R.layout.fragment_playlist
                         }
                         .show()
                     updateInfo(updatedList)
+                    libraryViewModel.refreshPlaylists()
                 }
             } catch (e: Exception) {
                 Log.e(TAG(), e.toString())
@@ -476,6 +484,7 @@ class PlaylistFragment : DynamicLayoutManagerFragment(R.layout.fragment_playlist
                 withContext(Dispatchers.Main) {
                     playlistAdapter.submitList(fixedList)
                     updateInfo(fixedList)
+                    libraryViewModel.refreshPlaylists()
                 }
             } catch (e: Exception) {
                 Log.e(TAG(), e.toString())
