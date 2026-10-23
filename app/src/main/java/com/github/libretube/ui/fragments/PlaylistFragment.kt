@@ -404,6 +404,10 @@ class PlaylistFragment : DynamicLayoutManagerFragment(R.layout.fragment_playlist
 
         val (video, originalPlaylistPosition) = playlistAdapter.currentList[sortedFeedPosition]
 
+        if (originalPlaylistPosition in playlistFeed.indices) {
+            playlistFeed.removeAt(originalPlaylistPosition)
+        }
+
         val updatedList = playlistAdapter.currentList.toMutableList()
         updatedList.removeAt(sortedFeedPosition)
         val fixedList = fixItemIndices(updatedList, originalPlaylistPosition, -1)
@@ -464,6 +468,7 @@ class PlaylistFragment : DynamicLayoutManagerFragment(R.layout.fragment_playlist
                 PlaylistsHelper.addToPlaylist(playlistId, streamItem)
 
                 val playlistAdapter = playlistAdapter ?: return@launch
+                playlistFeed.add(originalFeedPosition.coerceIn(0, playlistFeed.size), streamItem)
                 val updatedList = playlistAdapter.currentList.toMutableList()
                 updatedList.add(sortedFeedPosition, PlaylistItem(streamItem, originalFeedPosition))
                 val fixedList = fixItemIndices(updatedList, originalFeedPosition, +1)
