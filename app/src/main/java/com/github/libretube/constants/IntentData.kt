@@ -64,4 +64,5 @@ object IntentData {
     const val audioOnly = "audioOnly"
     const val category = "category"
     const val outputUri = "outputUri"
+    const val libraryTab = "libraryTab"
 }

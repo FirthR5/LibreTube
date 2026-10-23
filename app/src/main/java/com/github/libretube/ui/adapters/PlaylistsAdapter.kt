@@ -26,6 +26,7 @@ class PlaylistsAdapter(
 ) {
 
     var onStartDrag: ((PlaylistsViewHolder) -> Unit)? = null
+    var onListChanged: ((List<Playlists>) -> Unit)? = null
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): PlaylistsViewHolder {
         val layoutInflater = LayoutInflater.from(parent.context)
@@ -109,5 +110,6 @@ class PlaylistsAdapter(
     private fun onDelete(playlistId: String) {
         val newList = currentList.filterNot { it.id == playlistId }
         submitList(newList)
+        onListChanged?.invoke(newList)
     }
 }

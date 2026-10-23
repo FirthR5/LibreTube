@@ -8,6 +8,7 @@ import androidx.room.Transaction
 import androidx.room.Update
 import com.github.libretube.db.obj.LocalPlaylist
 import com.github.libretube.db.obj.LocalPlaylistItem
+import com.github.libretube.db.obj.LocalPlaylistWithVideoCount
 import com.github.libretube.db.obj.LocalPlaylistWithVideos
 
 @Dao
@@ -15,6 +16,16 @@ interface LocalPlaylistsDao {
     @Transaction
     @Query("SELECT * FROM LocalPlaylist")
     suspend fun getAll(): List<LocalPlaylistWithVideos>
+
+    @Query("SELECT p.*, (SELECT COUNT(*) FROM localPlaylistItem i WHERE i.playlistId = p.id) AS videoCount FROM LocalPlaylist p")
+    suspend fun getAllWithVideoCounts(): List<LocalPlaylistWithVideoCount>
+
+    @Query("SELECT * FROM LocalPlaylist WHERE id = :playlistId")
+    suspend fun getById(playlistId: Int): LocalPlaylist?
+
+    @Transaction
+    @Query("SELECT * FROM LocalPlaylist WHERE id = :playlistId")
+    suspend fun getByIdWithVideos(playlistId: Int): LocalPlaylistWithVideos?
 
     @Insert
     suspend fun createPlaylist(playlist: LocalPlaylist): Long

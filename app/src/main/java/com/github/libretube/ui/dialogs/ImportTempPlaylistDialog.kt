@@ -4,12 +4,14 @@ import android.app.Dialog
 import android.os.Bundle
 import android.util.Log
 import androidx.fragment.app.DialogFragment
+import androidx.fragment.app.activityViewModels
 import com.github.libretube.R
 import com.github.libretube.api.PlaylistsHelper
 import com.github.libretube.constants.IntentData
 import com.github.libretube.extensions.TAG
 import com.github.libretube.extensions.toastFromMainDispatcher
 import com.github.libretube.obj.PipedImportPlaylist
+import com.github.libretube.ui.models.LibraryViewModel
 import com.github.libretube.util.TextUtils
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import kotlinx.coroutines.CoroutineScope
@@ -17,6 +19,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 class ImportTempPlaylistDialog : DialogFragment() {
+    private val libraryViewModel: LibraryViewModel by activityViewModels()
+
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         val title = arguments?.getString(IntentData.playlistName)
             ?.takeIf { it.isNotEmpty() }
@@ -42,6 +46,7 @@ class ImportTempPlaylistDialog : DialogFragment() {
 
                         PlaylistsHelper.importPlaylists(listOf(playlist))
                         context.toastFromMainDispatcher(R.string.playlistCreated)
+                        libraryViewModel.refreshPlaylists()
                     } catch (e: Exception) {
                         Log.e(TAG(), e.toString())
                         e.localizedMessage?.let {

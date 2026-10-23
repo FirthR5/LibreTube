@@ -69,6 +69,10 @@
         android:name="com.github.libretube.ui.fragments.LibraryFragment"
         android:label="fragment_library"
         tools:layout="@layout/fragment_library">
+        <argument
+            android:name="libraryTab"
+            android:defaultValue="PLAYLISTS"
+            app:argType="com.github.libretube.enums.LibraryTab" />
         <action
             android:id="@+id/action_libraryFragment_to_watchHistoryFragment"
             app:destination="@id/watchHistoryFragment"
