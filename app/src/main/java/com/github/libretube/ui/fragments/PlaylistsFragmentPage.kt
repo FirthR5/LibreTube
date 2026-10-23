@@ -205,32 +205,32 @@ class PlaylistsFragmentPage :
     }
 
     // scroll the playlist item being dragged if it is near the top or bottom
-    // of the scroll view
+    // of the recycler view viewport
     private fun startDragAutoScroll() {
         dragAutoScrollRunnable?.let { dragScrollHandler.removeCallbacks(it) }
         val runnable = object : Runnable {
             override fun run() {
                 val binding = _binding ?: return
                 val viewHolder = draggedViewHolder ?: return
-                val scrollView = binding.playlistScrollView
+                val recyclerView = binding.playlistRecView
                 val threshold = 64f.dpToPx()
                 val scrollSpeed = 18f.dpToPx()
 
                 val itemLocation = IntArray(2)
                 viewHolder.itemView.getLocationOnScreen(itemLocation)
-                val scrollLocation = IntArray(2)
-                scrollView.getLocationOnScreen(scrollLocation)
+                val recyclerLocation = IntArray(2)
+                recyclerView.getLocationOnScreen(recyclerLocation)
 
                 val itemTop = itemLocation[1]
                 val itemBottom = itemTop + viewHolder.itemView.height
-                val viewportTop = scrollLocation[1]
-                val viewportBottom = viewportTop + scrollView.height
+                val viewportTop = recyclerLocation[1]
+                val viewportBottom = viewportTop + recyclerView.height
 
                 when {
-                    itemTop < viewportTop + threshold ->
-                        scrollView.scrollBy(0, -scrollSpeed)
-                    itemBottom > viewportBottom - threshold ->
-                        scrollView.scrollBy(0, scrollSpeed)
+                    itemTop < viewportTop + threshold && recyclerView.canScrollVertically(-1) ->
+                        recyclerView.scrollBy(0, -scrollSpeed)
+                    itemBottom > viewportBottom - threshold && recyclerView.canScrollVertically(1) ->
+                        recyclerView.scrollBy(0, scrollSpeed)
                 }
                 dragScrollHandler.postDelayed(this, 16)
             }
