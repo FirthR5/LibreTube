@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import android.view.KeyEvent
 import android.view.Menu
 import android.view.MenuItem
@@ -16,6 +17,7 @@ import androidx.activity.viewModels
 import androidx.appcompat.widget.SearchView
 import androidx.constraintlayout.motion.widget.Key
 import androidx.core.content.pm.ShortcutManagerCompat
+import androidx.core.graphics.Insets
 import androidx.core.net.toUri
 import androidx.core.os.bundleOf
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
@@ -55,6 +57,7 @@ import com.github.libretube.helpers.ThemeHelper
 import com.github.libretube.parcelable.PlayerData
 import com.github.libretube.ui.dialogs.ErrorDialog
 import com.github.libretube.ui.dialogs.ImportTempPlaylistDialog
+import com.github.libretube.ui.extensions.getSystemInsets
 import com.github.libretube.ui.extensions.onSystemInsets
 import com.github.libretube.ui.fragments.DownloadsFragment
 import com.github.libretube.ui.models.CommonPlayerViewModel
@@ -132,27 +135,13 @@ class MainActivity : AbstractPlayerHostActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        commonPlayerViewModel.systemBarInsets.value = null
         // manually apply additional padding for edge-to-edge compatibility
         // see https://developer.android.com/develop/ui/views/layout/edge-to-edge
         binding.root.onSystemInsets { _, systemBarInsets ->
-            commonPlayerViewModel.systemBarInsets.value = systemBarInsets
-            with(binding.appBarLayout) {
-                setPadding(
-                    paddingLeft,
-                    systemBarInsets.top,
-                    paddingRight,
-                    paddingBottom
-                )
-            }
-            with(binding.bottomNav) {
-                setPadding(
-                    paddingLeft,
-                    paddingTop,
-                    paddingRight,
-                    systemBarInsets.bottom
-                )
-            }
+            publishAndApplySystemInsets(systemBarInsets, "ACT insets dispatch")
         }
+        binding.root.requestApplyInsets()
         // manually update the bottom bar height in the mini player transition
         binding.bottomNav.addOnLayoutChangeListener { _, _, top, _, bottom, _, oldTop, _, oldBottom ->
             val navHeight = bottom - top
@@ -160,6 +149,7 @@ class MainActivity : AbstractPlayerHostActivity() {
             if (navHeight == oldNavHeight) return@addOnLayoutChangeListener
 
             updateBottomNavKeyframes(navHeight)
+            pinPlayerContainerToNav()
         }
         // enforce the mini player pose right before every frame gets drawn.
         binding.root.viewTreeObserver.addOnPreDrawListener {
@@ -229,6 +219,35 @@ class MainActivity : AbstractPlayerHostActivity() {
         showUserInfoDialogIfNeeded()
     }
 
+    override fun onResume() {
+        super.onResume()
+
+        getSystemInsets()?.let {
+            publishAndApplySystemInsets(it, "ACT onResume republish")
+        }
+    }
+
+    private fun publishAndApplySystemInsets(systemBarInsets: Insets, debugSource: String) {
+        Log.d( "MiniPlayerSync", "$debugSource top=${systemBarInsets.top} bottom=${systemBarInsets.bottom} navH=${binding.bottomNav.height}")
+        commonPlayerViewModel.systemBarInsets.value = systemBarInsets
+        with(binding.appBarLayout) {
+            setPadding(
+                paddingLeft,
+                systemBarInsets.top,
+                paddingRight,
+                paddingBottom
+            )
+        }
+        with(binding.bottomNav) {
+            setPadding(
+                paddingLeft,
+                paddingTop,
+                paddingRight,
+                systemBarInsets.bottom
+            )
+        }
+        pinPlayerContainerToNav()
+    }
     /**
      * Manually update the bottom nav bar height in the mini player transition.
      * These frame positions are hardcoded in activity_main_scene.xml!
@@ -266,6 +285,7 @@ class MainActivity : AbstractPlayerHostActivity() {
         }
 
         if (binding.container.translationY != targetTranslation) {
+            Log.d( "MiniPlayerSync", "PIN write translationY= $targetTranslation progress= $progress navH= ${binding.bottomNav.height}")
             binding.container.translationY = targetTranslation
         }
     }
@@ -736,12 +756,13 @@ class MainActivity : AbstractPlayerHostActivity() {
             .show()
     }
 
+    // Sync pose - animations pause when the window stops drawing
     override fun minimizePlayerContainerLayout() {
-        binding.mainMotionLayout.transitionToEnd()
+        binding.mainMotionLayout.progress = 1f
     }
 
     override fun maximizePlayerContainerLayout() {
-        binding.mainMotionLayout.transitionToStart()
+        binding.mainMotionLayout.progress = 0f
     }
 
     override fun setPlayerContainerProgress(progress: Float) {
