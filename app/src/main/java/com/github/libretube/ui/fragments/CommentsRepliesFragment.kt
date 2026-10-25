@@ -22,6 +22,7 @@ import com.github.libretube.extensions.formatShort
 import com.github.libretube.extensions.parcelable
 import com.github.libretube.helpers.NavigationHelper
 import com.github.libretube.ui.adapters.CommentsPagingAdapter
+import com.github.libretube.ui.extensions.onSystemInsets
 import com.github.libretube.ui.models.CommentRepliesViewModel
 import com.github.libretube.ui.models.CommentsViewModel
 import com.github.libretube.ui.sheets.CommentsSheet
@@ -62,6 +63,15 @@ class CommentsRepliesFragment : Fragment(R.layout.fragment_comments) {
         )
 
         binding.commentsRV.updatePadding(top = 0)
+
+        binding.commentsRV.onSystemInsets { v, systemInsets ->
+            v.setPadding(
+                v.paddingLeft,
+                v.paddingTop,
+                v.paddingRight,
+                systemInsets.bottom
+            )
+        }
 
         val layoutManager = LinearLayoutManager(context)
         binding.commentsRV.layoutManager = layoutManager
