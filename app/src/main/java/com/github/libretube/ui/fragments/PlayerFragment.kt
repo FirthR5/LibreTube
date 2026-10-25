@@ -1154,6 +1154,20 @@ class PlayerFragment : Fragment(R.layout.fragment_player), CustomPlayerCallback 
         binding.descriptionLayout.collapseDescription()
         binding.descriptionLayout.isInvisible = !show
         binding.relatedRecView.isInvisible = !show
+        if (!PlayerHelper.relatedStreamsEnabled) {
+            binding.relatedRecView.isGone = true
+            // TODO: Refactor in the next commit
+            binding.relatedContainer?.apply {
+                // Keep the sidebar area attached in landscape to block touch events.
+                isVisible = true
+                alpha = 1f
+                isClickable = true
+                isLongClickable = true
+                isFocusable = true
+                isFocusableInTouchMode = true
+                setOnTouchListener { _, _ -> true }
+            }
+        }
         binding.playerChannel.isInvisible = !show
         playerBackgroundBinding.videoTransitionProgress.isVisible = !show
     }
@@ -1256,7 +1270,33 @@ class PlayerFragment : Fragment(R.layout.fragment_player), CustomPlayerCallback 
     }
 
     private suspend fun showRelatedStreams() {
-        if (!PlayerHelper.relatedStreamsEnabled) return
+        if (!PlayerHelper.relatedStreamsEnabled) {
+            binding.relatedRecView.adapter = null
+            binding.relatedRecView.isGone = true
+            // only exists in the landscape (tablet) layout
+            binding.relatedContainer?.apply {
+                // Keep this visible and opaque so this region consumes touch events.
+                isVisible = true
+                alpha = 1f
+                isClickable = true
+                isLongClickable = true
+                isFocusable = true
+                isFocusableInTouchMode = true
+                setOnTouchListener { _, _ -> true }
+            }
+            return
+        }
+
+        binding.relatedRecView.isGone = false
+        binding.relatedContainer?.apply {
+            alpha = 1f
+            isVisible = true
+            isClickable = false
+            isLongClickable = false
+            isFocusable = false
+            isFocusableInTouchMode = false
+            setOnTouchListener(null)
+        }
 
         val relatedStreams = if (isOffline) {
             withContext(Dispatchers.IO) {
