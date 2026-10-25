@@ -12,6 +12,7 @@ import androidx.activity.BackEventCompat
 import androidx.activity.OnBackPressedCallback
 import androidx.constraintlayout.motion.widget.MotionLayout
 import androidx.constraintlayout.motion.widget.TransitionAdapter
+import androidx.core.graphics.Insets
 import androidx.core.math.MathUtils.clamp
 import androidx.core.os.bundleOf
 import androidx.core.view.isGone
@@ -112,17 +113,31 @@ class AudioPlayerFragment : Fragment(R.layout.fragment_audio_player), AudioPlaye
         _binding = FragmentAudioPlayerBinding.bind(view)
         super.onViewCreated(view, savedInstanceState)
 
-        // manually apply additional padding for edge-to-edge compatibility
-        activity.getSystemInsets()?.let { systemBars ->
+        // manually apply additional padding for edge-to-edge compatibility.
+        // the insets are observed instead of read once, since they can change
+        // while this fragment is already visible (e.g. when the taskbar of a
+        // tablet gets hidden or shown). They're forwarded by MainActivity
+        // through the shared view model, because the activity consumes them
+        // before they could reach this fragment.
+        val basePaddingTop = binding.audioPlayerMain.paddingTop
+        val basePaddingBottom = binding.audioPlayerMain.paddingBottom
+
+        fun applySystemInsets(systemBars: Insets) {
             with(binding.audioPlayerMain) {
                 setPadding(
                     paddingLeft,
-                    paddingTop + systemBars.top,
+                    basePaddingTop + systemBars.top,
                     paddingRight,
-                    paddingBottom + systemBars.bottom
+                    basePaddingBottom + systemBars.bottom
                 )
             }
         }
+
+        viewModel.systemBarInsets.observe(viewLifecycleOwner) { insets ->
+            insets?.let { applySystemInsets(it) }
+        }
+        // fallback in case the insets haven't been published yet
+        activity.getSystemInsets()?.let { applySystemInsets(it) }
 
         initializeTransitionLayout()
 

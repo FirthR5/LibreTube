@@ -1,5 +1,6 @@
 package com.github.libretube.ui.fragments
 
+import com.github.libretube.ui.extensions.onSystemInsets
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.app.Dialog
@@ -30,6 +31,7 @@ import androidx.constraintlayout.motion.widget.MotionLayout
 import androidx.constraintlayout.motion.widget.TransitionAdapter
 import androidx.core.content.ContextCompat
 import androidx.core.content.getSystemService
+import androidx.core.graphics.Insets
 import androidx.core.graphics.drawable.toDrawable
 import androidx.core.net.toUri
 import androidx.core.os.bundleOf
@@ -406,16 +408,36 @@ class PlayerFragment : Fragment(R.layout.fragment_player), CustomPlayerCallback 
         super.onViewCreated(view, savedInstanceState)
 
         // manually apply additional padding for edge-to-edge compatibility
-        activity?.getSystemInsets()?.let { systemBars ->
+        // Observed Insets changes to handle the system bars(un/hide taskbar) of a tablet
+        val baseRootPaddingTop = binding.root.paddingTop
+        val baseRootPaddingBottom = binding.root.paddingBottom
+        val baseScrollPaddingBottom = binding.playerScrollView.paddingBottom
+
+        fun applySystemInsets(systemBars: Insets) {
             with(binding.root) {
                 setPadding(
                     paddingLeft,
-                    paddingTop + systemBars.top,
+                    baseRootPaddingTop + systemBars.top,
                     paddingRight,
-                    paddingBottom
+                    baseRootPaddingBottom
+                )
+            }
+            // prevent overlaping by adding padding below the comment component with the system bar(taskbar on tablet)
+            with(binding.playerScrollView) {
+                setPadding(
+                    paddingLeft,
+                    paddingTop,
+                    paddingRight,
+                    baseScrollPaddingBottom + systemBars.bottom
                 )
             }
         }
+
+        commonPlayerViewModel.systemBarInsets.observe(viewLifecycleOwner) { insets ->
+            insets?.let { applySystemInsets(it) }
+        }
+        // fallback in case the insets haven't been published yet
+        activity?.getSystemInsets()?.let { applySystemInsets(it) }
 
 
         val playerData = requireArguments().parcelable<PlayerData>(IntentData.playerData)!!

@@ -19,6 +19,7 @@ import com.github.libretube.databinding.FragmentCommentsBinding
 import com.github.libretube.extensions.formatShort
 import com.github.libretube.helpers.NavigationHelper
 import com.github.libretube.ui.adapters.CommentsPagingAdapter
+import com.github.libretube.ui.extensions.onSystemInsets
 import com.github.libretube.ui.models.CommentsViewModel
 import com.github.libretube.ui.sheets.CommentsSheet
 
@@ -32,6 +33,15 @@ class CommentsMainFragment : Fragment(R.layout.fragment_comments) {
         val binding = FragmentCommentsBinding.bind(view)
         val layoutManager = LinearLayoutManager(requireContext())
         binding.commentsRV.layoutManager = layoutManager
+
+        binding.commentsRV.onSystemInsets { v, systemInsets ->
+            v.setPadding(
+                v.paddingLeft,
+                v.paddingTop,
+                v.paddingRight,
+                systemInsets.bottom
+            )
+        }
 
         val commentsSheet = parentFragment as? CommentsSheet
         commentsSheet?.binding?.btnScrollToTop?.setOnClickListener {

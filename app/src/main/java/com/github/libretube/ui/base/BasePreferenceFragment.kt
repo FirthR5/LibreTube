@@ -29,8 +29,9 @@ abstract class BasePreferenceFragment : PreferenceFragmentCompat() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         // add bottom padding to the list, to ensure that the last item is not overlapped by the system bars
+        val baseBottomPadding = listView.paddingBottom
         listView.onSystemInsets { v, systemInsets ->
-            v.updatePadding(bottom = v.paddingBottom + systemInsets.bottom)
+            v.updatePadding(bottom = baseBottomPadding + systemInsets.bottom)
         }
     }
 

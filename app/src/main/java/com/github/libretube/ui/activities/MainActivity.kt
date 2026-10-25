@@ -57,6 +57,7 @@ import com.github.libretube.ui.dialogs.ErrorDialog
 import com.github.libretube.ui.dialogs.ImportTempPlaylistDialog
 import com.github.libretube.ui.extensions.onSystemInsets
 import com.github.libretube.ui.fragments.DownloadsFragment
+import com.github.libretube.ui.models.CommonPlayerViewModel
 import com.github.libretube.ui.models.DownloadsViewModel
 import com.github.libretube.ui.models.PlaylistViewModel
 import com.github.libretube.ui.models.SearchViewModel
@@ -87,6 +88,8 @@ class MainActivity : AbstractPlayerHostActivity() {
     private val searchViewModel: SearchViewModel by viewModels()
     private val downloadViewModel: DownloadsViewModel by viewModels()
     private val playlistViewModel: PlaylistViewModel by viewModels()
+    private val commonPlayerViewModel: CommonPlayerViewModel by viewModels()
+
     // registering for activity results is only possible, this here should have been part of
     // PlaylistOptionsBottomSheet instead if Android allowed us to
     private var playlistExportFormat: ImportFormat = ImportFormat.NEWPIPE
@@ -132,51 +135,36 @@ class MainActivity : AbstractPlayerHostActivity() {
         // manually apply additional padding for edge-to-edge compatibility
         // see https://developer.android.com/develop/ui/views/layout/edge-to-edge
         binding.root.onSystemInsets { _, systemBarInsets ->
-            // there's a possibility that the paddings are not being applied properly when
-            // exiting from player's fullscreen. Adding OnGlobalLayoutListener serves as
-            // a workaround for this issue
-            binding.root.viewTreeObserver.addOnGlobalLayoutListener(object :
-                ViewTreeObserver.OnGlobalLayoutListener {
-                override fun onGlobalLayout() {
-                    with(binding.appBarLayout) {
-                        setPadding(
-                            paddingLeft,
-                            systemBarInsets.top,
-                            paddingRight,
-                            paddingBottom
-                        )
-                    }
-                    with(binding.bottomNav) {
-                        setPadding(
-                            paddingLeft,
-                            paddingTop,
-                            paddingRight,
-                            systemBarInsets.bottom
-                        )
-                    }
-                    binding.root.viewTreeObserver.removeOnGlobalLayoutListener(this)
-                }
-            })
+            commonPlayerViewModel.systemBarInsets.value = systemBarInsets
+            with(binding.appBarLayout) {
+                setPadding(
+                    paddingLeft,
+                    systemBarInsets.top,
+                    paddingRight,
+                    paddingBottom
+                )
+            }
+            with(binding.bottomNav) {
+                setPadding(
+                    paddingLeft,
+                    paddingTop,
+                    paddingRight,
+                    systemBarInsets.bottom
+                )
+            }
         }
         // manually update the bottom bar height in the mini player transition
-        binding.bottomNav.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
-            val transition = binding.root.getTransition(R.id.bottom_bar_transition)
-            transition.keyFrameList.forEach { keyFrame ->
-                // These frame positions are hardcoded in activity_main_scene.xml!
-                for (key in keyFrame.getKeyFramesForView(binding.bottomNav.id)) {
-                    if (key.framePosition == 1) key.setValue(
-                        Key.TRANSLATION_Y,
-                        binding.bottomNav.height
-                    )
-                }
-                for (key in keyFrame.getKeyFramesForView(binding.container.id)) {
-                    if (key.framePosition == 100) key.setValue(
-                        Key.TRANSLATION_Y,
-                        -binding.bottomNav.height
-                    )
-                }
-            }
-            binding.root.scene.setTransition(transition)
+        binding.bottomNav.addOnLayoutChangeListener { _, _, top, _, bottom, _, oldTop, _, oldBottom ->
+            val navHeight = bottom - top
+            val oldNavHeight = oldBottom - oldTop
+            if (navHeight == oldNavHeight) return@addOnLayoutChangeListener
+
+            updateBottomNavKeyframes(navHeight)
+        }
+        // enforce the mini player pose right before every frame gets drawn.
+        binding.root.viewTreeObserver.addOnPreDrawListener {
+            pinPlayerContainerToNav()
+            true
         }
 
         // Check update automatically
@@ -239,6 +227,47 @@ class MainActivity : AbstractPlayerHostActivity() {
         loadIntentData()
 
         showUserInfoDialogIfNeeded()
+    }
+
+    /**
+     * Manually update the bottom nav bar height in the mini player transition.
+     * These frame positions are hardcoded in activity_main_scene.xml!
+     */
+    private fun updateBottomNavKeyframes(navHeight: Int) {
+        val transition = binding.root.getTransition(R.id.bottom_bar_transition)
+        transition.keyFrameList.forEach { keyFrame ->
+            for (key in keyFrame.getKeyFramesForView(binding.bottomNav.id)) {
+                if (key.framePosition == 1) key.setValue(
+                    Key.TRANSLATION_Y,
+                    navHeight
+                )
+            }
+            for (key in keyFrame.getKeyFramesForView(binding.container.id)) {
+                if (key.framePosition == 100) key.setValue(
+                    Key.TRANSLATION_Y,
+                    -navHeight
+                )
+            }
+        }
+        binding.root.scene.setTransition(transition)
+    }
+
+    /**
+     * Pin the mini player pose to the current height of the bottom nav bar whenever the motion layout is at rest.
+     * Intermediate (dragged) states are left untouched to not interfere with the ongoing gesture.
+     */
+    private fun pinPlayerContainerToNav() {
+        val progress = binding.mainMotionLayout.progress
+
+        val targetTranslation = when {
+            progress >= 0.99f -> -binding.bottomNav.height.toFloat()
+            progress <= 0.01f -> 0f
+            else -> return
+        }
+
+        if (binding.container.translationY != targetTranslation) {
+            binding.container.translationY = targetTranslation
+        }
     }
 
     /**
