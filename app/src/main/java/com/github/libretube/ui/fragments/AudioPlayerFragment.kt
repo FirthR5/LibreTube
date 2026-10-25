@@ -349,12 +349,15 @@ class AudioPlayerFragment : Fragment(R.layout.fragment_audio_player), AudioPlaye
             }
         })
 
-        if (arguments?.getBoolean(IntentData.minimizeByDefault, false) != true) {
+        val minimizeByDefault = arguments?.getBoolean(IntentData.minimizeByDefault, false) == true
+        if (!minimizeByDefault && viewModel.isMiniPlayerVisible.value != true) {
+            // animate the expansion on a fresh playback session
             binding.playerMotionLayout.progress = 1f
             binding.playerMotionLayout.transitionToStart()
         } else {
-            binding.playerMotionLayout.progress = 0f
-            binding.playerMotionLayout.transitionToEnd()
+            // restore the pose synchronously: animations don't progress while the window isn't drawing
+            binding.playerMotionLayout.progress = 1f
+            activity.minimizePlayerContainerLayout()
         }
     }
 

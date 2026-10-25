@@ -2,6 +2,7 @@ package com.github.libretube.ui.fragments
 
 import com.github.libretube.ui.extensions.onSystemInsets
 import android.annotation.SuppressLint
+import android.util.Log
 import android.app.Activity
 import android.app.Dialog
 import android.content.BroadcastReceiver
@@ -406,6 +407,7 @@ class PlayerFragment : Fragment(R.layout.fragment_player), CustomPlayerCallback 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         _binding = FragmentPlayerBinding.bind(view)
         super.onViewCreated(view, savedInstanceState)
+        Log.d("MiniPlayerSync", "PF${hashCode()} onViewCreated NEW SESSION")
 
         // manually apply additional padding for edge-to-edge compatibility
         // Observed Insets changes to handle the system bars(un/hide taskbar) of a tablet
@@ -454,7 +456,7 @@ class PlayerFragment : Fragment(R.layout.fragment_player), CustomPlayerCallback 
 
         playerLayoutOrientation = resources.configuration.orientation
 
-        initializeTransitionLayout()
+        initializeTransitionLayout(createNewSession)
         initializeOnClickActions()
 
         if (PlayerHelper.autoFullscreenEnabled && resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) {
@@ -609,7 +611,7 @@ class PlayerFragment : Fragment(R.layout.fragment_player), CustomPlayerCallback 
     }
 
     @SuppressLint("ClickableViewAccessibility")
-    private fun initializeTransitionLayout() {
+    private fun initializeTransitionLayout(createNewSession: Boolean) {
         baseActivity.setPlayerContainerProgress(0f)
 
         var transitionStartId = 0
@@ -668,8 +670,20 @@ class PlayerFragment : Fragment(R.layout.fragment_player), CustomPlayerCallback 
                 }
             }
 
-        binding.playerMotionLayout.progress = 1F
-        binding.playerMotionLayout.transitionToStart()
+        if (createNewSession) {
+            // animate the expansion on a fresh playback session
+            binding.playerMotionLayout.progress = 1F
+            binding.playerMotionLayout.transitionToStart()
+        } else {
+            // Restore pose synchronously on recreation to keep animations in sync with the activity container
+            if (commonPlayerViewModel.isMiniPlayerVisible.value == true) {
+                binding.playerMotionLayout.progress = 1F
+                baseActivity.minimizePlayerContainerLayout()
+            } else {
+                binding.playerMotionLayout.progress = 0F
+                baseActivity.maximizePlayerContainerLayout()
+            }
+        }
 
         val activity = requireActivity()
         PictureInPictureCompat.setPictureInPictureParams(activity, pipParams)
