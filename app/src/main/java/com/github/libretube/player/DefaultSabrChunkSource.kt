@@ -224,6 +224,11 @@ class DefaultSabrChunkSource(
             chunkIterators,
         )
 
+        val periodDurationMs = Util.usToMs(representationHolder.periodDurationUs)
+        val requestPositionMs =
+            if (periodDurationMs == C.TIME_UNSET) Util.usToMs(playbackPositionUs)
+            else Util.usToMs(playbackPositionUs).coerceAtMost(periodDurationMs - 1)
+
         if (representationHolder.chunkExtractor != null) {
                 if (representationHolder.chunkIndex == null) {
                 // when we request a new format, it should start with an initialization chunk
@@ -233,7 +238,7 @@ class DefaultSabrChunkSource(
                     .setCustomData(
                         PlaybackRequest.initRequest(
                             representationHolder.representation.formatId(),
-                            Util.usToMs(playbackPositionUs),
+                            requestPositionMs,
                             loadingInfo.playbackSpeed,
                         )
                     )
@@ -289,7 +294,7 @@ class DefaultSabrChunkSource(
             .setUri(manifest.serverAbrStreamingUri)
             .setCustomData(PlaybackRequest(
                 representationHolder.representation.formatId(),
-                Util.usToMs(playbackPositionUs),
+                requestPositionMs,
                 loadingInfo.playbackSpeed,
                 // the chunk index doesn't count the index segment as segment 0
                 segmentNum + 1,

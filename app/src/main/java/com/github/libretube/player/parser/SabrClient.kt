@@ -295,9 +295,15 @@ class SabrClient private constructor(
         val itag = playbackRequest.format.itag
 
         // the player should never request data past the end of the stream
-        assert(
-            playbackRequest.playerPosition < (initializedFormats[itag]?.duration ?: Long.MAX_VALUE)
-        ) { "Requested segment for finished format" }
+        initializedFormats[itag]?.duration?.let { formatDurationMs ->
+            if (playbackRequest.playerPosition >= formatDurationMs) {
+                Log.w(
+                    TAG,
+                    "getNextSegment: requested segment for finished format $itag " +
+                        "at position ${playbackRequest.playerPosition} (duration: $formatDurationMs)"
+                )
+            }
+        }
 
         Log.d(
             TAG,
