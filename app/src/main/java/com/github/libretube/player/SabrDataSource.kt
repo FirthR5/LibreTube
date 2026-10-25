@@ -38,6 +38,8 @@ class SabrDataSource(
                 "open: failed to get segment ${playbackRequest!!.segment} for ${playbackRequest.format.itag}: $e"
             )
             throw IOException()
+        } catch (e: Throwable) {
+            throw IOException()
         }
 
         data = CompositeBuffer(segment.data)

@@ -295,9 +295,15 @@ class SabrClient private constructor(
         val itag = playbackRequest.format.itag
 
         // the player should never request data past the end of the stream
-        assert(
-            playbackRequest.playerPosition < (initializedFormats[itag]?.duration ?: Long.MAX_VALUE)
-        ) { "Requested segment for finished format" }
+        initializedFormats[itag]?.duration?.let { formatDurationMs ->
+            if (playbackRequest.playerPosition >= formatDurationMs) {
+                Log.w(
+                    TAG,
+                    "getNextSegment: requested segment for finished format $itag " +
+                        "at position ${playbackRequest.playerPosition} (duration: $formatDurationMs)"
+                )
+            }
+        }
 
         Log.d(
             TAG,
@@ -638,6 +644,18 @@ class SabrClient private constructor(
     fun generatePoToken() : ByteString? {
         val poTokenResult = poTokenGenerator.getWebClientPoToken(videoId) ?: return null
         return ByteString.copyFrom(poTokenResult.streamingDataPoToken!!.toByteArray())
+    }
+
+    /**
+     * Releases all resources held by this client, including retained media segment data and the underlying HTTP client.
+     * Must be called when the associated media source is released.
+     */
+    fun release() {
+        initializedFormats.clear()
+        partialSegments.clear()
+        client.dispatcher.cancelAll()
+        client.connectionPool.evictAll()
+        client.dispatcher.executorService.shutdown()
     }
 
     companion object {

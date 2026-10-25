@@ -160,6 +160,7 @@ class SabrMediaSource(
     override fun releaseSourceInternal() {
         elapsedRealtimeOffsetMs = C.TIME_UNSET
         drmSessionManager.release()
+        sabrClient.release()
     }
 
     private fun processManifest() {
