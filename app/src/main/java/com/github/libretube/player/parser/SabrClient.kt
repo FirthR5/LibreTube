@@ -646,6 +646,18 @@ class SabrClient private constructor(
         return ByteString.copyFrom(poTokenResult.streamingDataPoToken!!.toByteArray())
     }
 
+    /**
+     * Releases all resources held by this client, including retained media segment data and the underlying HTTP client.
+     * Must be called when the associated media source is released.
+     */
+    fun release() {
+        initializedFormats.clear()
+        partialSegments.clear()
+        client.dispatcher.cancelAll()
+        client.connectionPool.evictAll()
+        client.dispatcher.executorService.shutdown()
+    }
+
     companion object {
         private const val TAG = "SabrStream"
         private const val CONTENT_TYPE = "application/x-protobuf"
